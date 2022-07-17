@@ -10,18 +10,6 @@ const char* BRed="\033[1;31m";
 int numstack[BUFFSIZE];
 int* numstackp = numstack;
 
-void pushnum(int val) {
-  if (numstackp - numstack >= BUFFSIZE)
-    return;
-  *numstackp++ = val;
-}
-
-int popnum(void) {
-  if (numstackp - numstack == 0)
-    return EOF;
-  return *--numstackp;
-}
-
 /* takes ints 0-9 */
 int digstack[BUFFSIZE];
 int* digstackp = digstack;
@@ -59,12 +47,11 @@ int hash_free() {
   struct ListNode** hashp = hash;
   while (hashp - hash < HASH_SIZE) {
     struct ListNode* node = *hashp;
-    while (node->next) {
+    do {
       struct ListNode* tmp = node;
-      node = node->next; 
+      node = node->next;
       free(tmp);
-    }
-    free(*hashp);
+    } while (node);
     ++hashp;
   }
   return 1;
