@@ -12,17 +12,17 @@ int* numstackp = numstack;
 
 /* takes ints 0-9 */
 int digstack[BUFFSIZE];
-int* digstackp = digstack;
+int stackp = 0;
 void pushdig(int val) {
-  if (digstackp - digstack >= BUFFSIZE)
+  if (stackp >= BUFFSIZE)
     return;
-  *digstackp++ = val;
+  digstack[stackp++] = val;
 }
 
 int popdig(void) {
-  if (digstackp - digstack == 0)
+  if (stackp == 0)
     return EOF;
-  return *--digstackp;
+  return digstack[--stackp];
 }
 
 struct ListNode {
@@ -33,26 +33,23 @@ struct ListNode {
 #define HASH_SIZE 500
 struct ListNode* hash[HASH_SIZE];
 int hash_initialize() {
-  struct ListNode** hashp = hash;
-  while (hashp - hash < HASH_SIZE) {
-    *hashp = malloc(sizeof(struct ListNode));
-    assert(hashp);
-    (*hashp)->value=0;
-    (*hashp)->next=NULL;
-    ++hashp;
+  for (int p = 0; p < HASH_SIZE; p++) {
+    hash[p] = malloc(sizeof(struct ListNode));
+    assert(hash[p]);
+    hash[p]->value=0;
+    hash[p]->next=NULL;
   }
   return 1;
 }
+
 int hash_free() {
-  struct ListNode** hashp = hash;
-  while (hashp - hash < HASH_SIZE) {
-    struct ListNode* node = *hashp;
+  for (int p = 0; p < HASH_SIZE; p++) {
+    struct ListNode* node = hash[p];
     do {
       struct ListNode* tmp = node;
       node = node->next;
       free(tmp);
     } while (node);
-    ++hashp;
   }
   return 1;
 }
@@ -63,7 +60,7 @@ int hash_hashing(int val) {
 }
 
 int hash_set(int val) {
-  struct ListNode* node = *(hash + hash_hashing(val));
+  struct ListNode* node = hash[hash_hashing(val)];
   do {
     if (node->value == val) {
       return 1;
@@ -84,7 +81,7 @@ int hash_set(int val) {
 }
 
 int hash_check(int val) {
-  struct ListNode* node = *(hash + hash_hashing(val));
+  const struct ListNode* node = hash[hash_hashing(val)];
   do {
     if (node->value == val) {
       return 1;
@@ -100,57 +97,52 @@ int* findfactors(int num, int* return_length) {
 #define BLOCK_SIZE 100
   int* factors = malloc(sizeof(int) * BLOCK_SIZE);
   assert(factors);
-  int* factorsp = factors;
-  int i = 1;
-  int div;
-  for (i = 1; i <= num; ++i) {
-    /* if i evenly divides num */
+  int fp = 0;
+  for (int i = 1; i <= num; ++i) {
     if (num % i == 0) {
-      div = num / i;
+      const int div = num / i;
       if (!hash_set(div)) {
-        *factorsp++ = div;
+        factors[fp++] = div;
       }
       if (!hash_set(i)) {
-        *factorsp++ = i;
+        factors[fp++] = i;
       }
     }
   }
-  *return_length = factorsp - factors;
+  *return_length = fp;
   return factors;
 }
 
 int main(int argc, char** argv)
 {
   int ch = 0;
-  /* routine to retrieve numbers to be processed and store them on a stack */
   while ((ch = fgetc(stdin)) != EOF) {
     if (isdigit(ch)) {
       pushdig(ch - '0');
-    } else {
-      int x = 0;
-      int n = 1;
-      int sum = 0;
-      while ((x = popdig()) != EOF) {
-        sum = sum + x * n; 
-        n *= 10;
-      }
-      if (sum) {
-        hash_initialize();
-        int return_length;
-        int* factors = findfactors(sum, &return_length);
-        int* factorsp = factors + return_length - 1;
-        printf("factors of %d:\n", sum);
-        while (factorsp >= factors) {
-          printf("%d", *factorsp);
-          if (factorsp - factors != 0) {
-            printf(", ");
-          }
-          --factorsp;
+      continue;
+    }
+    int n = 1;
+    int sum = 0;
+
+    int x;
+    while ((x = popdig()) != EOF) {
+      sum += x * n;
+      n *= 10;
+    }
+    if (sum) {
+      hash_initialize();
+      int return_length;
+      int* factors = findfactors(sum, &return_length);
+      printf("factors of %d:\n", sum);
+      for (int fp = return_length - 1; fp >= 0; --fp) {
+        printf("%d", factors[fp]);
+        if (fp != 0) {
+          printf(", ");
         }
-        free(factors);
-        hash_free();
-        printf("\n");
       }
+      free(factors);
+      hash_free();
+      printf("\n");
     }
   }
 }
